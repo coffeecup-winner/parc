@@ -1,3 +1,4 @@
+use std::cmp::Ordering;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -16,7 +17,7 @@ impl Directory {
     pub fn open(path: &Path) -> Directory {
         let mut directory = Directory {
             path: path.to_path_buf(),
-            entries: vec!(),
+            entries: vec![],
         };
         directory.refresh();
         directory
@@ -35,6 +36,17 @@ impl Directory {
                 }
             }
         }
+        self.entries.sort_by(|a, b| {
+            if a.type_.is_dir() ^ b.type_.is_dir() {
+                if a.type_.is_dir() {
+                    Ordering::Less
+                } else {
+                    Ordering::Greater
+                }
+            } else {
+                a.name.cmp(&b.name)
+            }
+        });
     }
 
     pub fn path(&self) -> &Path {
