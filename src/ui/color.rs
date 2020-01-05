@@ -1,6 +1,6 @@
 use pancurses::*;
 
-pub const COLOR_DEFAULT: i16 = 8;
+pub const COLOR_DEFAULT: i16 = COLOR_WHITE + 1;
 
 pub fn init() {
     start_color();
