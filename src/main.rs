@@ -18,24 +18,16 @@ fn main() {
         match ui.get_next_input() {
             Input::KeyF10 | Input::Character('q') => break,
             Input::KeyDown => {
-                if ui.selected_line_idx < directory.entries().len() as u32 - 1 {
-                    ui.selected_line_idx += 1;
-                }
+                directory.select_next();
             }
             Input::KeyUp => {
-                if ui.selected_line_idx > 0 {
-                    ui.selected_line_idx -= 1;
-                }
+                directory.select_previous();
             }
             Input::KeyEnter | Input::Character('\n') => {
-                if directory.open_subdirectory(ui.selected_line_idx) {
-                    ui.selected_line_idx = 0;
-                }
+                directory.open_selected_subdirectory();
             }
             Input::KeyBackspace | Input::Character('\u{7f}') => {
-                if directory.open_parent() {
-                    ui.selected_line_idx = 0;
-                }
+                directory.open_parent();
             }
             input => {
                 ui.set_status(&format!("Unhandled input: {:?}", input));

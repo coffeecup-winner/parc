@@ -11,6 +11,7 @@ pub struct FsEntry {
 pub struct Directory {
     path: PathBuf,
     entries: Vec<FsEntry>,
+    selected_entry_idx: usize,
 }
 
 impl Directory {
@@ -18,6 +19,7 @@ impl Directory {
         let mut directory = Directory {
             path: path.to_path_buf(),
             entries: vec![],
+            selected_entry_idx: 0,
         };
         directory.refresh();
         directory
@@ -57,25 +59,42 @@ impl Directory {
         &self.entries
     }
 
-    pub fn open_subdirectory(&mut self, idx: u32) -> bool {
-        if idx as usize > self.entries.len() {
-            return false;
+    pub fn selected_entry_idx(&self) -> usize {
+        self.selected_entry_idx
+    }
+
+    pub fn select_previous(&mut self) {
+        if self.selected_entry_idx > 0 {
+            self.selected_entry_idx -= 1;
         }
-        let entry = &self.entries[idx as usize];
+    }
+
+    pub fn select_next(&mut self) {
+        if self.selected_entry_idx < self.entries.len() as usize - 1 {
+            self.selected_entry_idx += 1;
+        }
+    }
+
+    pub fn open_selected_subdirectory(&mut self) {
+        let entry = &self.entries[self.selected_entry_idx];
         if entry.type_.is_dir() {
             self.path.push(&entry.name);
             self.refresh();
-            return true;
+            self.selected_entry_idx = 0;
         }
-        return false;
     }
 
-    pub fn open_parent(&mut self) -> bool {
+    pub fn open_parent(&mut self) {
         if let Some(parent) = self.path.parent() {
+            let current_directory_name =
+                self.path.file_name().unwrap().to_str().unwrap().to_owned();
             self.path = parent.to_path_buf();
             self.refresh();
-            return true;
+            self.selected_entry_idx = self
+                .entries
+                .iter()
+                .position(|e| e.name == current_directory_name)
+                .unwrap_or(0);
         }
-        return false;
     }
 }
