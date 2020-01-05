@@ -1,4 +1,4 @@
-use std::cmp::{max, min, Ordering};
+use std::cmp::{min, Ordering};
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -110,13 +110,19 @@ impl Provider for Directory {
         self.entries.len() as u32
     }
 
-    fn handle_input(&mut self, input: &Input) -> bool {
+    fn handle_input(&mut self, input: &Input, view: &mut View) -> bool {
         match input {
             Input::KeyDown => {
                 self.select_next();
+                if self.selected_entry_idx as u32 >= view.first_line_offset() + view.height() {
+                    view.set_first_line_offset(self.selected_entry_idx as u32 - view.height() + 1);
+                }
             }
             Input::KeyUp => {
                 self.select_previous();
+                if (self.selected_entry_idx as u32) < view.first_line_offset() {
+                    view.set_first_line_offset(self.selected_entry_idx as u32);
+                }
             }
             Input::KeyEnter | Input::Character('\n') => {
                 self.open_selected_subdirectory();
@@ -133,12 +139,12 @@ impl Provider for Directory {
         if self.entries.len() == 0 {
             return;
         }
-        if self.selected_entry_idx < view.first_line_offset as usize {
-            self.selected_entry_idx = view.first_line_offset as usize;
-        } else if self.selected_entry_idx >= (view.first_line_offset + view.height) as usize {
-            self.selected_entry_idx = (view.first_line_offset + view.height) as usize - 1;
-        } else if view.first_line_offset == 0
-            && (self.selected_entry_idx == min(self.entries.len(), view.height as usize) - 1)
+        if self.selected_entry_idx < view.first_line_offset() as usize {
+            self.selected_entry_idx = view.first_line_offset() as usize;
+        } else if self.selected_entry_idx >= (view.first_line_offset() + view.height()) as usize {
+            self.selected_entry_idx = (view.first_line_offset() + view.height()) as usize - 1;
+        } else if view.first_line_offset() == 0
+            && (self.selected_entry_idx == min(self.entries.len(), view.height() as usize) - 1)
         {
             self.selected_entry_idx = 0;
         }

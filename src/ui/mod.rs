@@ -12,9 +12,27 @@ pub trait Drawable {
 }
 
 pub struct View {
-    pub first_line_offset: u32,
-    pub width: u32,
-    pub height: u32,
+    first_line_offset: u32,
+    width: u32,
+    height: u32,
+}
+
+impl View {
+    pub fn first_line_offset(&self) -> u32 {
+        self.first_line_offset
+    }
+
+    pub fn set_first_line_offset(&mut self, value: u32) {
+        self.first_line_offset = value;
+    }
+
+    pub fn width(&self) -> u32 {
+        self.width
+    }
+
+    pub fn height(&self) -> u32 {
+        self.height
+    }
 }
 
 pub struct UI {
@@ -83,7 +101,7 @@ impl UI {
                     }
                     self.provider.handle_window_scrolled(&self.view);
                 }
-                input if self.provider.handle_input(&input) => {}
+                input if self.provider.handle_input(&input, &mut self.view) => {}
                 input => {
                     self.set_status(&format!("Unhandled input: {:?}", input));
                 }
