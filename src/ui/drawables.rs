@@ -1,6 +1,6 @@
 use pancurses::*;
 
-use crate::fs::directory::Directory;
+use crate::providers::Directory;
 use crate::ui::{color, Drawable, View};
 
 impl Drawable for Directory {

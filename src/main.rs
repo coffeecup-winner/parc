@@ -2,10 +2,10 @@ use std::path::Path;
 
 use pancurses::Input;
 
-use crate::fs::directory::Directory;
+use crate::providers::Directory;
 use crate::ui::UI;
 
-mod fs;
+mod providers;
 mod ui;
 
 fn main() {
