@@ -60,7 +60,30 @@ impl UI {
             self.refresh();
             match self.get_next_input() {
                 Input::KeyF10 | Input::Character('q') => break,
-                input if self.provider.handle_input(&input) => {},
+                Input::KeyPPage => {
+                    if self.provider.lines_count() == 0 {
+                        continue;
+                    }
+                    if self.view.first_line_offset >= self.view.height {
+                        self.view.first_line_offset -= self.view.height;
+                    } else {
+                        self.view.first_line_offset = 0;
+                    }
+                    self.provider.handle_window_scrolled(&self.view);
+                }
+                Input::KeyNPage => {
+                    if self.provider.lines_count() == 0 {
+                        continue;
+                    }
+                    if self.view.first_line_offset + self.view.height < self.provider.lines_count()
+                    {
+                        self.view.first_line_offset += self.view.height;
+                    } else {
+                        self.view.first_line_offset = self.provider.lines_count() - 1;
+                    }
+                    self.provider.handle_window_scrolled(&self.view);
+                }
+                input if self.provider.handle_input(&input) => {}
                 input => {
                     self.set_status(&format!("Unhandled input: {:?}", input));
                 }
@@ -68,22 +91,22 @@ impl UI {
         }
     }
 
-    pub fn get_next_input(&self) -> Input {
+    fn get_next_input(&self) -> Input {
         self.window.getch().unwrap()
     }
 
-    pub fn clear(&self) {
+    fn clear(&self) {
         self.window.erase();
     }
 
-    pub fn refresh(&self) {
+    fn refresh(&self) {
         self.window.attrset(A_NORMAL);
         self.window
             .mvprintw(self.window.get_max_y() - 1, 0, &self.status_line);
         self.window.refresh();
     }
 
-    pub fn draw(&self, drawable: &Box<dyn Provider>) {
+    fn draw(&self, drawable: &Box<dyn Provider>) {
         self.window.attrset(A_NORMAL);
         drawable.draw(&self.window, &self.view);
     }

@@ -73,6 +73,9 @@ impl Directory {
     }
 
     fn select_next(&mut self) {
+        if self.entries.len() == 0 {
+            return;
+        }
         if self.selected_entry_idx < self.entries.len() as usize - 1 {
             self.selected_entry_idx += 1;
         }
@@ -103,6 +106,10 @@ impl Directory {
 }
 
 impl Provider for Directory {
+    fn lines_count(&self) -> u32 {
+        self.entries.len() as u32
+    }
+
     fn handle_input(&mut self, input: &Input) -> bool {
         match input {
             Input::KeyDown => {
@@ -123,9 +130,17 @@ impl Provider for Directory {
     }
 
     fn handle_window_scrolled(&mut self, view: &View) {
-        self.selected_entry_idx = max(
-            view.first_line_offset + view.height,
-            min(view.first_line_offset, self.selected_entry_idx as u32),
-        ) as usize;
+        if self.entries.len() == 0 {
+            return;
+        }
+        if self.selected_entry_idx < view.first_line_offset as usize {
+            self.selected_entry_idx = view.first_line_offset as usize;
+        } else if self.selected_entry_idx >= (view.first_line_offset + view.height) as usize {
+            self.selected_entry_idx = (view.first_line_offset + view.height) as usize - 1;
+        } else if view.first_line_offset == 0
+            && (self.selected_entry_idx == min(self.entries.len(), view.height as usize) - 1)
+        {
+            self.selected_entry_idx = 0;
+        }
     }
 }
