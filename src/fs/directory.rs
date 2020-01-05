@@ -45,11 +45,11 @@ impl Directory {
         &self.entries
     }
 
-    pub fn open_subdirectory(&mut self, idx: usize) -> bool {
-        if idx > self.entries.len() {
+    pub fn open_subdirectory(&mut self, idx: u32) -> bool {
+        if idx as usize > self.entries.len() {
             return false;
         }
-        let entry = &self.entries[idx];
+        let entry = &self.entries[idx as usize];
         if entry.type_.is_dir() {
             self.path.push(&entry.name);
             self.refresh();
