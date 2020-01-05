@@ -37,7 +37,7 @@ impl UI {
         let max_x = window.get_max_x() as u32;
         let max_y = window.get_max_y() as u32 - 1; // leaving the status line
         UI {
-            window: window,
+            window,
             status_line: String::new(),
             view: View {
                 first_line_offset: 0,

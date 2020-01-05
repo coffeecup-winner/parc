@@ -10,7 +10,7 @@ impl Drawable for Directory {
         for entry in self.entries() {
             let mut attr = 0;
             if entry.type_.is_dir() {
-                attr = color::fg(COLOR_BLUE);
+                attr |= color::fg(COLOR_BLUE);
             }
             if y - 1 == self.selected_entry_idx() {
                 attr |= A_REVERSE;
