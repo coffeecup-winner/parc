@@ -1,5 +1,6 @@
-use pancurses::{cbreak, curs_set, endwin, initscr, noecho, Input, Window};
+use pancurses::*;
 
+mod color;
 mod drawables;
 
 pub trait Drawable {
@@ -26,6 +27,7 @@ impl UI {
         cbreak();
         curs_set(0);
         noecho();
+        color::init();
         UI {
             window: window,
             status_line: String::new(),
@@ -42,12 +44,14 @@ impl UI {
     }
 
     pub fn refresh(&self) {
+        self.window.attrset(A_NORMAL);
         self.window
             .mvprintw(self.window.get_max_y() - 1, 0, &self.status_line);
         self.window.refresh();
     }
 
     pub fn draw<T: Drawable>(&self, drawable: &T) {
+        self.window.attrset(A_NORMAL);
         drawable.draw(&self.window, self.selected_line_idx);
     }
 
