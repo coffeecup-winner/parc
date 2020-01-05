@@ -1,6 +1,9 @@
-use std::cmp::Ordering;
+use std::cmp::{max, min, Ordering};
 use std::fs;
 use std::path::{Path, PathBuf};
+
+use crate::providers::Provider;
+use crate::ui::{Input, View};
 
 pub struct FsEntry {
     pub name: String,
@@ -63,19 +66,19 @@ impl Directory {
         self.selected_entry_idx
     }
 
-    pub fn select_previous(&mut self) {
+    fn select_previous(&mut self) {
         if self.selected_entry_idx > 0 {
             self.selected_entry_idx -= 1;
         }
     }
 
-    pub fn select_next(&mut self) {
+    fn select_next(&mut self) {
         if self.selected_entry_idx < self.entries.len() as usize - 1 {
             self.selected_entry_idx += 1;
         }
     }
 
-    pub fn open_selected_subdirectory(&mut self) {
+    fn open_selected_subdirectory(&mut self) {
         let entry = &self.entries[self.selected_entry_idx];
         if entry.type_.is_dir() {
             self.path.push(&entry.name);
@@ -84,7 +87,7 @@ impl Directory {
         }
     }
 
-    pub fn open_parent(&mut self) {
+    fn open_parent(&mut self) {
         if let Some(parent) = self.path.parent() {
             let current_directory_name =
                 self.path.file_name().unwrap().to_str().unwrap().to_owned();
@@ -96,5 +99,33 @@ impl Directory {
                 .position(|e| e.name == current_directory_name)
                 .unwrap_or(0);
         }
+    }
+}
+
+impl Provider for Directory {
+    fn handle_input(&mut self, input: &Input) -> bool {
+        match input {
+            Input::KeyDown => {
+                self.select_next();
+            }
+            Input::KeyUp => {
+                self.select_previous();
+            }
+            Input::KeyEnter | Input::Character('\n') => {
+                self.open_selected_subdirectory();
+            }
+            Input::KeyBackspace | Input::Character('\u{7f}') => {
+                self.open_parent();
+            }
+            _ => return false,
+        }
+        true
+    }
+
+    fn handle_window_scrolled(&mut self, view: &View) {
+        self.selected_entry_idx = max(
+            view.first_line_offset + view.height,
+            min(view.first_line_offset, self.selected_entry_idx as u32),
+        ) as usize;
     }
 }
