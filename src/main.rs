@@ -7,7 +7,8 @@ mod providers;
 mod ui;
 
 fn main() {
-    let directory = Box::new(Directory::open(&Path::new(".").canonicalize().unwrap()));
-    let mut ui = UI::new(directory);
+    let main_provider = Box::new(Directory::open(&Path::new(".").canonicalize().unwrap()));
+    let background_provider = Box::new(Directory::open(&Path::new(".").canonicalize().unwrap()));
+    let mut ui = UI::new(main_provider, background_provider);
     ui.main_loop();
 }

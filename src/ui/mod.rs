@@ -11,6 +11,7 @@ pub trait Drawable {
     fn draw(&self, window: &Window, view: &View);
 }
 
+#[derive(Clone)]
 pub struct View {
     first_line_offset: u32,
     width: u32,
@@ -36,10 +37,12 @@ impl View {
 }
 
 pub struct UI {
-    provider: Box<dyn Provider>,
+    main_provider: Box<dyn Provider>,
+    main_view: View,
+    background_provider: Box<dyn Provider>,
+    background_view: View,
     window: Window,
     status_line: String,
-    view: View,
 }
 
 impl Drop for UI {
@@ -49,7 +52,7 @@ impl Drop for UI {
 }
 
 impl UI {
-    pub fn new(initial_provider: Box<dyn Provider>) -> UI {
+    pub fn new(main_provider: Box<dyn Provider>, background_provider: Box<dyn Provider>) -> UI {
         let window = initscr();
         window.refresh();
         window.keypad(true);
@@ -59,49 +62,58 @@ impl UI {
         color::init();
         let max_x = window.get_max_x() as u32;
         let max_y = window.get_max_y() as u32 - 1; // leaving the status line
+        let view = View {
+            first_line_offset: 0,
+            width: max_x,
+            height: max_y,
+        };
         UI {
-            provider: initial_provider,
+            main_provider,
+            main_view: view.clone(),
+            background_provider,
+            background_view: view,
             window,
             status_line: String::new(),
-            view: View {
-                first_line_offset: 0,
-                width: max_x,
-                height: max_y,
-            },
         }
     }
 
     pub fn main_loop(&mut self) {
         loop {
             self.clear();
-            self.draw(&self.provider);
+            self.window.attrset(A_NORMAL);
+            self.main_provider.draw(&self.window, &self.main_view);
             self.refresh();
             match self.get_next_input() {
                 Input::KeyF10 | Input::Character('q') => break,
+                Input::Character('\t') => {
+                    std::mem::swap(&mut self.main_provider, &mut self.background_provider);
+                    std::mem::swap(&mut self.main_view, &mut self.background_view);
+                }
                 Input::KeyPPage => {
-                    if self.provider.lines_count() == 0 {
+                    if self.main_provider.lines_count() == 0 {
                         continue;
                     }
-                    if self.view.first_line_offset >= self.view.height {
-                        self.view.first_line_offset -= self.view.height;
+                    if self.main_view.first_line_offset >= self.main_view.height {
+                        self.main_view.first_line_offset -= self.main_view.height;
                     } else {
-                        self.view.first_line_offset = 0;
+                        self.main_view.first_line_offset = 0;
                     }
-                    self.provider.handle_window_scrolled(&self.view);
+                    self.main_provider.handle_window_scrolled(&self.main_view);
                 }
                 Input::KeyNPage => {
-                    if self.provider.lines_count() == 0 {
+                    if self.main_provider.lines_count() == 0 {
                         continue;
                     }
-                    if self.view.first_line_offset + self.view.height < self.provider.lines_count()
+                    if self.main_view.first_line_offset + self.main_view.height
+                        < self.main_provider.lines_count()
                     {
-                        self.view.first_line_offset += self.view.height;
+                        self.main_view.first_line_offset += self.main_view.height;
                     } else {
-                        self.view.first_line_offset = self.provider.lines_count() - 1;
+                        self.main_view.first_line_offset = self.main_provider.lines_count() - 1;
                     }
-                    self.provider.handle_window_scrolled(&self.view);
+                    self.main_provider.handle_window_scrolled(&self.main_view);
                 }
-                input if self.provider.handle_input(&input, &mut self.view) => {}
+                input if self.main_provider.handle_input(&input, &mut self.main_view) => {}
                 input => {
                     self.set_status(&format!("Unhandled input: {:?}", input));
                 }
@@ -122,11 +134,6 @@ impl UI {
         self.window
             .mvprintw(self.window.get_max_y() - 1, 0, &self.status_line);
         self.window.refresh();
-    }
-
-    fn draw(&self, drawable: &Box<dyn Provider>) {
-        self.window.attrset(A_NORMAL);
-        drawable.draw(&self.window, &self.view);
     }
 
     pub fn set_status(&mut self, status_line: &str) {
