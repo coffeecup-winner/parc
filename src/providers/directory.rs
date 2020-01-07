@@ -1,4 +1,5 @@
 use std::cmp::{min, Ordering};
+use std::collections::HashSet;
 use std::fs;
 use std::path::{Path, PathBuf};
 
@@ -14,6 +15,7 @@ pub struct FsEntry {
 pub struct Directory {
     path: PathBuf,
     entries: Vec<FsEntry>,
+    marked_entries: HashSet<String>,
     selected_entry_idx: usize,
 }
 
@@ -22,6 +24,7 @@ impl Directory {
         let mut directory = Directory {
             path: path.to_path_buf(),
             entries: vec![],
+            marked_entries: HashSet::new(),
             selected_entry_idx: 0,
         };
         directory.refresh();
@@ -60,6 +63,10 @@ impl Directory {
 
     pub fn entries(&self) -> &Vec<FsEntry> {
         &self.entries
+    }
+
+    pub fn marked_entries(&self) -> &HashSet<String> {
+        &self.marked_entries
     }
 
     pub fn selected_entry_idx(&self) -> usize {
@@ -103,6 +110,15 @@ impl Directory {
                 .unwrap_or(0);
         }
     }
+
+    fn mark_unmark_selected(&mut self) {
+        let name = &self.entries[self.selected_entry_idx].name;
+        if self.marked_entries.contains(name) {
+            self.marked_entries.remove(name);
+        } else {
+            self.marked_entries.insert(name.clone());
+        }
+    }
 }
 
 impl Provider for Directory {
@@ -129,6 +145,9 @@ impl Provider for Directory {
             }
             Input::KeyBackspace | Input::Character('\u{7f}') => {
                 self.open_parent();
+            }
+            Input::Character(' ') => {
+                self.mark_unmark_selected();
             }
             _ => return false,
         }

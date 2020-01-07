@@ -19,7 +19,9 @@ impl Drawable for Directory {
         );
         for entry in &self.entries()[from..to] {
             let mut attr = 0;
-            if entry.type_.is_dir() {
+            if self.marked_entries().contains(&entry.name) {
+                attr |= color::fg(COLOR_YELLOW);
+            } else if entry.type_.is_dir() {
                 attr |= color::fg(COLOR_BLUE);
             }
             if view.first_line_offset + y - 1 == self.selected_entry_idx() as u32 {
