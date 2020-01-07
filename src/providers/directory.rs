@@ -91,6 +91,7 @@ impl Directory {
     fn open_selected_subdirectory(&mut self) {
         let entry = &self.entries[self.selected_entry_idx];
         if entry.type_.is_dir() {
+            self.marked_entries.clear();
             self.path.push(&entry.name);
             self.refresh();
             self.selected_entry_idx = 0;
@@ -99,6 +100,7 @@ impl Directory {
 
     fn open_parent(&mut self) {
         if let Some(parent) = self.path.parent() {
+            self.marked_entries.clear();
             let current_directory_name =
                 self.path.file_name().unwrap().to_str().unwrap().to_owned();
             self.path = parent.to_path_buf();
