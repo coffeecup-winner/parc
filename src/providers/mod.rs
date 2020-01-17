@@ -1,7 +1,9 @@
 use crate::ui::{Drawable, Input, View};
 
 pub mod directory;
+pub mod log;
 
+pub use self::log::{Log, Logger};
 pub use directory::Directory;
 
 pub trait Provider: Drawable {
