@@ -144,7 +144,12 @@ impl UI {
                     }
                     self.main_provider.handle_window_scrolled(&self.main_view);
                 }
-                input if self.main_provider.handle_input(&input, &mut self.main_view) => {}
+                input
+                    if self.main_provider.handle_input(
+                        &input,
+                        &mut self.main_view,
+                        &mut self.background_provider,
+                    ) => {}
                 input => {
                     if let Some(idx) = self.extra_activators.iter().position(|a| a == &input) {
                         if self.activated_extra_provider == None {

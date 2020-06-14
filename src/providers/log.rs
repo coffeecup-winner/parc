@@ -1,9 +1,11 @@
 use std::cmp::min;
+use std::path::Path;
 use std::sync::Mutex;
 
 use log::{Level, Metadata, Record};
 use pancurses::Window;
 
+use crate::providers::directory::FsEntry; // TODO: move FsEntry from there
 use crate::providers::Provider;
 use crate::ui::{Drawable, Input, View};
 
@@ -62,9 +64,18 @@ impl Provider for Log {
         LINES.lock().unwrap().len() as u32
     }
 
-    fn handle_input(&mut self, _input: &Input, _view: &mut View) -> bool {
+    fn handle_input(
+        &mut self,
+        _input: &Input,
+        _view: &mut View,
+        _other: &mut Box<dyn Provider>,
+    ) -> bool {
         false
     }
 
     fn handle_window_scrolled(&mut self, _view: &View) {}
+
+    fn copy_to(&mut self, _path: &Path, _entries: &Vec<FsEntry>) -> bool {
+        false
+    }
 }

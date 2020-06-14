@@ -6,10 +6,21 @@ use std::path::{Path, PathBuf};
 use crate::providers::Provider;
 use crate::ui::{Input, View};
 
+#[derive(Clone)]
 pub struct FsEntry {
     pub name: String,
     pub type_: fs::FileType,
     pub metadata: fs::Metadata,
+}
+
+impl FsEntry {
+    pub fn from_dir_entry(de: &fs::DirEntry) -> FsEntry {
+        FsEntry {
+            name: de.file_name().into_string().unwrap(),
+            type_: de.file_type().unwrap(),
+            metadata: de.metadata().unwrap(),
+        }
+    }
 }
 
 pub struct Directory {
@@ -36,11 +47,7 @@ impl Directory {
         if let Ok(d) = fs::read_dir(&self.path) {
             for x in d {
                 if let Ok(de) = x {
-                    self.entries.push(FsEntry {
-                        name: de.file_name().into_string().unwrap(),
-                        type_: de.file_type().unwrap(),
-                        metadata: de.metadata().unwrap(),
-                    });
+                    self.entries.push(FsEntry::from_dir_entry(&de));
                 }
             }
         }
@@ -121,6 +128,20 @@ impl Directory {
             self.marked_entries.insert(name.clone());
         }
     }
+
+    fn copy(&mut self, other: &mut Box<dyn Provider>) {
+        let mut entries_to_copy = vec![];
+        for entry in self.entries.iter() {
+            if self.marked_entries.contains(&entry.name) {
+                entries_to_copy.push(entry.clone());
+            }
+        }
+        if other.copy_to(&self.path, &entries_to_copy) {
+            self.marked_entries.clear();
+        } else {
+            // TODO: error message
+        }
+    }
 }
 
 impl Provider for Directory {
@@ -128,7 +149,12 @@ impl Provider for Directory {
         self.entries.len() as u32
     }
 
-    fn handle_input(&mut self, input: &Input, view: &mut View) -> bool {
+    fn handle_input(
+        &mut self,
+        input: &Input,
+        view: &mut View,
+        other: &mut Box<dyn Provider>,
+    ) -> bool {
         match input {
             Input::KeyDown => {
                 self.select_next();
@@ -151,6 +177,9 @@ impl Provider for Directory {
             Input::Character(' ') => {
                 self.mark_unmark_selected();
             }
+            Input::KeyF5 | Input::Character('c') => {
+                self.copy(other);
+            }
             _ => return false,
         }
         true
@@ -169,5 +198,49 @@ impl Provider for Directory {
         {
             self.selected_entry_idx = 0;
         }
+    }
+
+    fn copy_to(&mut self, path: &Path, entries: &Vec<FsEntry>) -> bool {
+        let mut path_from = path.to_path_buf();
+        let mut path_to = self.path.to_path_buf();
+        for entry in entries {
+            if entry.type_.is_dir() {
+                trace!("copy: [dir] {}", entry.name);
+                path_from.push(Path::new(&entry.name));
+                path_to.push(Path::new(&entry.name));
+                let mut dir_entries = vec![];
+                match fs::read_dir(&path_from) {
+                    Err(_) => return false,
+                    Ok(de) => {
+                        for e in de {
+                            match e {
+                                Err(_) => return false,
+                                Ok(e) => {
+                                    dir_entries.push(FsEntry::from_dir_entry(&e));
+                                }
+                            }
+                        }
+                    }
+                }
+                if !self.copy_to(&path_to, &dir_entries) {
+                    return false;
+                }
+            } else if entry.type_.is_symlink() {
+                // TODO: decide what to do
+                trace!("copy: [link] {}", entry.name);
+                warn!("copy: copying links is not yet supported");
+            } else if entry.type_.is_file() {
+                trace!("copy: [file] {}", entry.name);
+                path_from.push(Path::new(&entry.name));
+                path_to.push(Path::new(&entry.name));
+                // TODO: handle errors
+                let res = fs::copy(&path_from, &path_to);
+                info!("copy: {:?} -> {:?}: {:?}", path_from, path_to, res);
+                path_from.pop();
+                path_to.pop();
+            }
+        }
+        self.refresh();
+        true
     }
 }
